@@ -64,6 +64,34 @@ function go(me, dir, cur_dir) {
   }
 }
 
+function try_go(me, dist, cur_dist, x, y, try_dir, cur_dir) {
+  print("dir: " + try_dir);
+  if (try_dir == "left") {
+    if (x > 0 && dist[x - 1][y] < cur_dist) {
+      go(me, "left", cur_dir);
+      return true;
+    }
+  }
+  else if (try_dir == "right") {
+    if (x < MAP_W - 1 && dist[x + 1][y] < cur_dist) {
+      go(me, "right", cur_dir);
+      return true;
+    }
+  }
+  else if (try_dir == "up") {
+    if (y > 0 && dist[x][y - 1] < cur_dist) {
+      go(me, "up", cur_dir);
+      return true
+    }
+  }
+  else if (try_dir == "down") {
+    if (y < MAP_H - 1 && dist[x][y + 1] < cur_dist) {
+      go(me, "down", cur_dir);
+      return true;
+    }
+  }
+}
+
 function sameXY(moving_obj, target) {
   var x = moving_obj.position[0];
   var y = moving_obj.position[1];
@@ -124,24 +152,29 @@ function onIdle(me, enemy, game) {
   }
 
   if (star) {
+    print("Found star!");
     // dist from star
     var dist = newDistArray();
 
     // dist[game.star[0]][game.star[1]] = 0;
     flood(dist, map, star[0], star[1], 0);
+    // print(dist);
 
     var cur_dist = dist[x][y];
-    if (x > 0 && dist[x - 1][y] < cur_dist) {
-      go(me, "left", dir);
+
+    // up: 0; right: 1; down: 2; left: 3
+    var dirs = ["up", "right", "down", "left"];
+    var dirno = dirs.indexOf(dir);
+
+    var did_go = try_go(me, dist, cur_dist, x, y, dirs[dirno], dir);
+    if (!did_go) {
+      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 1) % 4], dir);
     }
-    else if (x < MAP_W - 1 && dist[x + 1][y] < cur_dist) {
-      go(me, "right", dir);
+    if (!did_go) {
+      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 3) % 4], dir);
     }
-    else if (y > 0 && dist[x][y - 1] < cur_dist) {
-      go(me, "up", dir);
-    }
-    else if (y < MAP_H - 1 && dist[x][y + 1] < cur_dist) {
-      go(me, "down", dir);
+    if (!did_go) {
+      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 2) % 4], dir);
     }
   }
   else {
