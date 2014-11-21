@@ -19,6 +19,7 @@ function randInt(min, max) {
 var MAP_W = 19;
 var MAP_H = 15;
 var INFINITY = 999;
+var DIRS = ["up", "right", "down", "left"];
 
 function newDistArray(argument) {
   var x = new Array(MAP_W);
@@ -31,7 +32,7 @@ function newDistArray(argument) {
   return x;
 }
 
-function flood(dist, map, x, y, value) {
+function flood(dist, x, y, value) {
   if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) {
     return;
   }
@@ -46,10 +47,20 @@ function flood(dist, map, x, y, value) {
   }
 
   dist[x][y] = value;
-  flood(dist, map, x - 1, y, value + 1);
-  flood(dist, map, x + 1, y, value + 1);
-  flood(dist, map, x, y - 1, value + 1);
-  flood(dist, map, x, y + 1, value + 1);
+  flood(dist, x - 1, y, value + 1);
+  flood(dist, x + 1, y, value + 1);
+  flood(dist, x, y - 1, value + 1);
+  flood(dist, x, y + 1, value + 1);
+}
+
+var old_star = null;
+function gen_dist(star) {
+  if (!old_star || star[0] != old_star[0] || star[1] != old_star[1]) {
+    print("Generating dist");
+    dist = newDistArray();
+    flood(dist, star[0], star[1], 0);
+    old_star = star;
+  }
 }
 
 function go(me, dir, cur_dir) {
@@ -57,8 +68,7 @@ function go(me, dir, cur_dir) {
     me.go();
   }
   else {
-    var directions = ["up", "right", "down", "left"];
-    var delta_dir = directions.indexOf(dir) - directions.indexOf(cur_dir);
+    var delta_dir = DIRS.indexOf(dir) - DIRS.indexOf(cur_dir);
     if (delta_dir == 1 || delta_dir == -3) { me.turn("right"); }
     else { me.turn("left"); }
   }
@@ -116,7 +126,7 @@ function onIdle(me, enemy, game) {
   var y = me.tank.position[1]
   var dir = me.tank.direction;
   var star = game.star;
-  var map = game.map;
+  map = game.map;
 
   if (enemy.bullet) {
     var sameLine = sameXY(enemy.bullet, me.tank);
@@ -153,28 +163,21 @@ function onIdle(me, enemy, game) {
 
   if (star) {
     print("Found star!");
-    // dist from star
-    var dist = newDistArray();
 
-    // dist[game.star[0]][game.star[1]] = 0;
-    flood(dist, map, star[0], star[1], 0);
-    // print(dist);
+    gen_dist(star);
 
     var cur_dist = dist[x][y];
+    var dirno = DIRS.indexOf(dir);
 
-    // up: 0; right: 1; down: 2; left: 3
-    var dirs = ["up", "right", "down", "left"];
-    var dirno = dirs.indexOf(dir);
-
-    var did_go = try_go(me, dist, cur_dist, x, y, dirs[dirno], dir);
+    var did_go = try_go(me, dist, cur_dist, x, y, DIRS[dirno], dir);
     if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 1) % 4], dir);
+      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 1) % 4], dir);
     }
     if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 3) % 4], dir);
+      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 3) % 4], dir);
     }
     if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, dirs[(dirno + 2) % 4], dir);
+      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 2) % 4], dir);
     }
   }
   else {
