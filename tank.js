@@ -25,6 +25,9 @@ var R = 1;
 var D = 2;
 var L = 3;
 
+var g_last_enemy = null;
+var g_bullets = [];
+
 function newDistArray(argument) {
   var x = new Array(MAP_W);
   for (var i = 0; i < MAP_W; i++) {
@@ -57,9 +60,13 @@ function flood(dist, x, y, value) {
   flood(dist, x, y + 1, value + 1);
 }
 
+function same(a, b) {
+  return a[0] === b[0] && a[1] === b[1];
+}
+
 var old_star = null;
 function genDist() {
-  if (!old_star || g_star[0] != old_star[0] || g_star[1] != old_star[1]) {
+  if (!old_star || !same(g_star, old_star)) {
     print("Generating dist");
     dist = newDistArray();
     flood(dist, g_star[0], g_star[1], 0);
@@ -95,6 +102,12 @@ function getPenalty(x, y, dirno) {
     penalty += 2;
   }
 
+  for (var i = g_bullets.length - 1; i >= 0; i--) {
+    if (sameXYObj(g_bullets[i], x, y)) {
+      penalty += 5;
+    }
+  };
+
   return penalty;
 }
 
@@ -107,6 +120,21 @@ function go(dirno) {
     if (delta_dir == 1 || delta_dir == -3) { g_me.turn("right"); }
     else { g_me.turn("left"); }
   }
+}
+
+function sameXYObj(moving_obj, target_x, target_y) {
+  var x = moving_obj.x;
+  var y = moving_obj.y;
+  var dirno = moving_obj.dirno;
+
+  if (x == target_x && ((y < target_y && dirno === D) || (y > target_y && dirno === U))) {
+    return "x";
+  }
+  if (y == target_y && ((x < target_x && dirno === R) || (x > target_x && dirno === L))) {
+    return "y";
+  }
+
+  return false;
 }
 
 function sameXY(moving_obj, target) {
@@ -137,29 +165,31 @@ function onIdle(me, enemy, game) {
   g_cur_dirno = DIRS.indexOf(dir);
   g_map = game.map;
 
+  if (enemy.tank) {
+    if (g_last_enemy && g_last_enemy.direction == enemy.tank.direction &&
+        same(g_last_enemy.position, enemy.tank.position)) {
+      // potential fire
+      g_bullets.push({
+        x: g_last_enemy.position[0],
+        y: g_last_enemy.position[1],
+        dirno: DIRS.indexOf(g_last_enemy.direction)
+      });
+    }
+    g_last_enemy = enemy.tank;
+  }
+  else {
+    g_last_enemy_pos = null;
+  }
+
   if (enemy.bullet) {
     var sameLine = sameXY(enemy.bullet, g_me.tank);
-    if (sameLine == "x") {
-      print("Found bullet X");
-      if (dir == "left" || dir == "right") {
-        me.go();
-      }
-      else {
-        me.turn("left");
-        me.go();
-      }
-      return;
-    }
-    else if (sameLine == "y") {
-      print("Found bullet Y");
-      if (dir == "up" || dir == "down") {
-        me.go();
-      }
-      else {
-        me.turn("right");
-        me.go();
-      }
-      return;
+    if (sameLine) {
+      print("Found bullet!");
+      g_bullets.push({
+        x: enemy.bullet.position[0],
+        y: enemy.bullet.position[1],
+        dirno: DIRS.indexOf(enemy.bullet.direction)
+      });
     }
   }
 
