@@ -20,6 +20,10 @@ var MAP_W = 19;
 var MAP_H = 15;
 var INFINITY = 999;
 var DIRS = ["up", "right", "down", "left"];
+var U = 0;
+var R = 1;
+var D = 2;
+var L = 3;
 
 function newDistArray(argument) {
   var x = new Array(MAP_W);
@@ -63,8 +67,35 @@ function genDist() {
   }
 }
 
-function getPenalty(x, y) {
-  return dist[x][y];
+function getThreat(x, y) {
+  if (!g_enemy.tank) { return null; }
+
+  var sameLine = sameXY(g_enemy.tank, {position: [x, y]});
+  if (sameLine == "x") {
+    if (g_enemy.tank.position[0] > x) { return L; }
+    else { return R; }
+  }
+  else if (sameLine == "y") {
+    if (g_enemy.tank.position[1] > y) { return U; }
+    else { return D; }
+  }
+
+  return null;
+}
+
+function getPenalty(x, y, dirno) {
+  var penalty = dist[x][y];
+
+  var threat = getThreat(x, y);
+  if (threat === null || threat == (dirno + 2) % 4) {}
+  else if (threat == dirno) {
+    penalty += 5;
+  }
+  else {
+    penalty += 2;
+  }
+
+  return penalty;
 }
 
 function go(dirno) {
@@ -85,7 +116,6 @@ function sameXY(moving_obj, target) {
 
   var target_x = target.position[0];
   var target_y = target.position[1];
-  var target_dir = target.direction;
 
   if (x == target_x && ((y < target_y && dir == "down") || (y > target_y && dir == "up"))) {
     return "x";
@@ -103,6 +133,7 @@ function onIdle(me, enemy, game) {
   g_y = me.tank.position[1];
   g_star = game.star;
   g_me = me;
+  g_enemy = enemy;
   g_cur_dirno = DIRS.indexOf(dir);
   g_map = game.map;
 
@@ -145,12 +176,13 @@ function onIdle(me, enemy, game) {
     genDist();
 
     var penalty = [
-        getPenalty(g_x, g_y - 1),
-        getPenalty(g_x + 1, g_y),
-        getPenalty(g_x, g_y + 1),
-        getPenalty(g_x - 1, g_y)
+        getPenalty(g_x, g_y - 1, 0),
+        getPenalty(g_x + 1, g_y, 1),
+        getPenalty(g_x, g_y + 1, 2),
+        getPenalty(g_x - 1, g_y, 3)
     ];
 
+    // add penalty for rotation
     penalty[(g_cur_dirno + 2) % 4] += 2;
     penalty[(g_cur_dirno + 1) % 4] += 1;
     penalty[(g_cur_dirno + 3) % 4] += 1;
