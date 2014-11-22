@@ -41,7 +41,7 @@ function flood(dist, x, y, value) {
     return;
   }
 
-  if (map[x][y] == "x") {
+  if (g_map[x][y] == "x") {
     // Stone
     return;
   }
@@ -54,51 +54,27 @@ function flood(dist, x, y, value) {
 }
 
 var old_star = null;
-function gen_dist(star) {
-  if (!old_star || star[0] != old_star[0] || star[1] != old_star[1]) {
+function genDist() {
+  if (!old_star || g_star[0] != old_star[0] || g_star[1] != old_star[1]) {
     print("Generating dist");
     dist = newDistArray();
-    flood(dist, star[0], star[1], 0);
-    old_star = star;
+    flood(dist, g_star[0], g_star[1], 0);
+    old_star = g_star;
   }
 }
 
-function go(me, dir, cur_dir) {
-  if (cur_dir == dir) {
-    me.go();
+function getPenalty(x, y) {
+  return dist[x][y];
+}
+
+function go(dirno) {
+  if (g_cur_dirno == dirno) {
+    g_me.go();
   }
   else {
-    var delta_dir = DIRS.indexOf(dir) - DIRS.indexOf(cur_dir);
-    if (delta_dir == 1 || delta_dir == -3) { me.turn("right"); }
-    else { me.turn("left"); }
-  }
-}
-
-function try_go(me, dist, cur_dist, x, y, try_dir, cur_dir) {
-  print("dir: " + try_dir);
-  if (try_dir == "left") {
-    if (x > 0 && dist[x - 1][y] < cur_dist) {
-      go(me, "left", cur_dir);
-      return true;
-    }
-  }
-  else if (try_dir == "right") {
-    if (x < MAP_W - 1 && dist[x + 1][y] < cur_dist) {
-      go(me, "right", cur_dir);
-      return true;
-    }
-  }
-  else if (try_dir == "up") {
-    if (y > 0 && dist[x][y - 1] < cur_dist) {
-      go(me, "up", cur_dir);
-      return true
-    }
-  }
-  else if (try_dir == "down") {
-    if (y < MAP_H - 1 && dist[x][y + 1] < cur_dist) {
-      go(me, "down", cur_dir);
-      return true;
-    }
+    var delta_dir = dirno - g_cur_dirno;
+    if (delta_dir == 1 || delta_dir == -3) { g_me.turn("right"); }
+    else { g_me.turn("left"); }
   }
 }
 
@@ -122,16 +98,18 @@ function sameXY(moving_obj, target) {
 }
 
 function onIdle(me, enemy, game) {
-  var x = me.tank.position[0];
-  var y = me.tank.position[1]
   var dir = me.tank.direction;
-  var star = game.star;
-  map = game.map;
+  g_x = me.tank.position[0];
+  g_y = me.tank.position[1];
+  g_star = game.star;
+  g_me = me;
+  g_cur_dirno = DIRS.indexOf(dir);
+  g_map = game.map;
 
   if (enemy.bullet) {
-    var sameLine = sameXY(enemy.bullet, me.tank);
+    var sameLine = sameXY(enemy.bullet, g_me.tank);
     if (sameLine == "x") {
-      print("Found bullet X")
+      print("Found bullet X");
       if (dir == "left" || dir == "right") {
         me.go();
       }
@@ -142,7 +120,7 @@ function onIdle(me, enemy, game) {
       return;
     }
     else if (sameLine == "y") {
-      print("Found bullet Y")
+      print("Found bullet Y");
       if (dir == "up" || dir == "down") {
         me.go();
       }
@@ -161,24 +139,23 @@ function onIdle(me, enemy, game) {
     }
   }
 
-  if (star) {
+  if (g_star) {
     print("Found star!");
 
-    gen_dist(star);
+    genDist();
 
-    var cur_dist = dist[x][y];
-    var dirno = DIRS.indexOf(dir);
+    var penalty = [
+        getPenalty(g_x, g_y - 1),
+        getPenalty(g_x + 1, g_y),
+        getPenalty(g_x, g_y + 1),
+        getPenalty(g_x - 1, g_y)
+    ];
 
-    var did_go = try_go(me, dist, cur_dist, x, y, DIRS[dirno], dir);
-    if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 1) % 4], dir);
-    }
-    if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 3) % 4], dir);
-    }
-    if (!did_go) {
-      did_go = try_go(me, dist, cur_dist, x, y, DIRS[(dirno + 2) % 4], dir);
-    }
+    penalty[(g_cur_dirno + 2) % 4] += 2;
+    penalty[(g_cur_dirno + 1) % 4] += 1;
+    penalty[(g_cur_dirno + 3) % 4] += 1;
+
+    go(penalty.indexOf(Math.min.apply(Math, penalty)));
   }
   else {
     // TODO
