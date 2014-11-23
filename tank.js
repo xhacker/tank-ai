@@ -155,6 +155,20 @@ function sameXY(moving_obj, target) {
   return false;
 }
 
+function updateBullet(bullet) {
+  if      (bullet.dirno == U) { bullet.y -= 2; }
+  else if (bullet.dirno == R) { bullet.x += 2; }
+  else if (bullet.dirno == D) { bullet.y += 2; }
+  else if (bullet.dirno == L) { bullet.x -= 2; }
+}
+
+function validBullet(bullet) {
+  if (bullet.x < 0 || bullet.x >= MAP_W || bullet.y < 0 || bullet.y >= MAP_H) {
+    return false;
+  }
+  return true;
+}
+
 function onIdle(me, enemy, game) {
   var dir = me.tank.direction;
   g_x = me.tank.position[0];
@@ -165,15 +179,27 @@ function onIdle(me, enemy, game) {
   g_cur_dirno = DIRS.indexOf(dir);
   g_map = game.map;
 
+  // update bullets
+  var new_bullets = [];
+  print(g_bullets);
+  for (var i = g_bullets.length - 1; i >= 0; i--) {
+    updateBullet(g_bullets[i]);
+    if (validBullet(g_bullets[i])) {
+      new_bullets.push(g_bullets[i]);
+    }
+  }
+  g_bullets = new_bullets;
+
   if (enemy.tank) {
     if (g_last_enemy && g_last_enemy.direction == enemy.tank.direction &&
         same(g_last_enemy.position, enemy.tank.position)) {
-      // potential fire
-      g_bullets.push({
+      var potential_bullet = {
         x: g_last_enemy.position[0],
         y: g_last_enemy.position[1],
         dirno: DIRS.indexOf(g_last_enemy.direction)
-      });
+      };
+      updateBullet(potential_bullet);
+      g_bullets.push(potential_bullet);
     }
     g_last_enemy = enemy.tank;
   }
