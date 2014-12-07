@@ -1,17 +1,3 @@
-// me.stars
-// me.tank
-// me.tank.position
-// me.tank.direction
-// me.bullet
-
-// me.go(steps)
-// me.turn(direction)
-// me.fire()
-
-// game.map
-// game.frames
-// game.star
-
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min)) + min;
 }
@@ -129,6 +115,12 @@ function go(dirno) {
   }
 }
 
+function turnTo(dirno) {
+  var delta_dir = dirno - g_cur_dirno;
+  if (delta_dir == 1 || delta_dir == -3) { g_me.turn("right"); }
+  else { g_me.turn("left"); }
+}
+
 function sameXYObj(moving_obj, target_x, target_y) {
   var x = moving_obj.x;
   var y = moving_obj.y;
@@ -152,6 +144,7 @@ function sameXY(moving_obj, target) {
   var target_x = target.position[0];
   var target_y = target.position[1];
 
+  // TODO: obstacles
   if (x == target_x && ((y < target_y && dir == "down") || (y > target_y && dir == "up"))) {
     return "x";
   }
@@ -160,6 +153,25 @@ function sameXY(moving_obj, target) {
   }
 
   return false;
+}
+
+function whichDir(moving_obj, target) {
+  var x = moving_obj.position[0];
+  var y = moving_obj.position[1];
+  var dir = moving_obj.direction;
+
+  var target_x = target.position[0];
+  var target_y = target.position[1];
+
+  // TODO: obstacles
+  if (x == target_x) {
+    return y > target_y ? U : D;
+  }
+  if (y == target_y) {
+    return x < target_x ? R : L;
+  }
+
+  return -1;
 }
 
 function updateBullet(bullet) {
@@ -229,6 +241,12 @@ function onIdle(me, enemy, game) {
   if (enemy.tank && !me.bullet) {
     if (sameXY(me.tank, enemy.tank)) {
       me.fire();
+      return;
+    }
+
+    var enemyDir = whichDir(me.tank, enemy.tank);
+    if (enemyDir != -1) {
+      turnTo(enemyDir);
       return;
     }
   }
