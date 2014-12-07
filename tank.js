@@ -73,6 +73,13 @@ function genDist() {
     old_star = g_star;
   }
 }
+function resetDist() {
+  for (var i = 0; i < MAP_W; i++) {
+    for (var j = 0; j < MAP_H; j++) {
+      dist[i][j] = 0;
+    }
+  }
+}
 
 function getThreat(x, y) {
   if (!g_enemy.tank) { return null; }
@@ -232,10 +239,10 @@ function onIdle(me, enemy, game) {
     genDist();
 
     var penalty = [
-        getPenalty(g_x, g_y - 1, 0),
-        getPenalty(g_x + 1, g_y, 1),
-        getPenalty(g_x, g_y + 1, 2),
-        getPenalty(g_x - 1, g_y, 3)
+      getPenalty(g_x, g_y - 1, 0),
+      getPenalty(g_x + 1, g_y, 1),
+      getPenalty(g_x, g_y + 1, 2),
+      getPenalty(g_x - 1, g_y, 3)
     ];
 
     // add penalty for rotation
@@ -246,10 +253,18 @@ function onIdle(me, enemy, game) {
     go(penalty.indexOf(Math.min.apply(Math, penalty)));
   }
   else {
-    // TODO
     if (!me.bullet) { me.fire(); }
-    else {
-      me.turn("left");
-    }
+    var penalty = [
+      randInt(1, 100),
+      randInt(1, 100),
+      randInt(1, 100),
+      randInt(1, 100)
+    ];
+    
+    penalty[(g_cur_dirno + 2) % 4] += 42;
+    penalty[(g_cur_dirno + 1) % 4] += 21;
+    penalty[(g_cur_dirno + 3) % 4] += 21;
+    
+    go(penalty.indexOf(Math.min.apply(Math, penalty)));
   }
 }
