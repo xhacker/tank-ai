@@ -144,11 +144,24 @@ function sameXY(moving_obj, target) {
   var target_x = target.position[0];
   var target_y = target.position[1];
 
-  // TODO: obstacles
   if (x == target_x && ((y < target_y && dir == "down") || (y > target_y && dir == "up"))) {
+    var start = y < target_y ? y : target_y;
+    var end = y > target_y ? y : target_y;
+    for (var i = start + 1; i < end; ++i) {
+      if (g_map[x][i] == "x") {
+        return false;
+      }
+    }
     return "x";
   }
   if (y == target_y && ((x < target_x && dir == "right") || (x > target_x && dir == "left"))) {
+    var start = x < target_x ? x : target_x;
+    var end = x > target_x ? x : target_x;
+    for (var i = start + 1; i < end; ++i) {
+      if (g_map[i][y] == "x") {
+        return false;
+      }
+    }
     return "y";
   }
 
@@ -286,3 +299,4 @@ function onIdle(me, enemy, game) {
     go(penalty.indexOf(Math.min.apply(Math, penalty)));
   }
 }
+
