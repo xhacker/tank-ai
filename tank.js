@@ -59,7 +59,9 @@ function genDist() {
     old_star = g_star;
   }
 }
+
 function resetDist() {
+  dist = newDistArray();
   for (var i = 0; i < MAP_W; i++) {
     for (var j = 0; j < MAP_H; j++) {
       dist[i][j] = 0;
@@ -285,16 +287,19 @@ function onIdle(me, enemy, game) {
   }
   else {
     if (!me.bullet) { me.fire(); }
+
+    resetDist();
+
     var penalty = [
-      randInt(1, 100),
-      randInt(1, 100),
-      randInt(1, 100),
-      randInt(1, 100)
+      getPenalty(g_x, g_y - 1, 0),
+      getPenalty(g_x + 1, g_y, 1),
+      getPenalty(g_x, g_y + 1, 2),
+      getPenalty(g_x - 1, g_y, 3)
     ];
     
-    penalty[(g_cur_dirno + 2) % 4] += 42;
-    penalty[(g_cur_dirno + 1) % 4] += 21;
-    penalty[(g_cur_dirno + 3) % 4] += 21;
+    penalty[(g_cur_dirno + 2) % 4] += 2;
+    penalty[(g_cur_dirno + 1) % 4] += 1;
+    penalty[(g_cur_dirno + 3) % 4] += 1;
     
     go(penalty.indexOf(Math.min.apply(Math, penalty)));
   }
